@@ -1,0 +1,746 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="utf-8">
+<title>Cronache dell'Avventuriero</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cinzel+Decorative:wght@400;700;900&family=Cinzel:wght@400;600;700&family=IM+Fell+English:ital@0;1&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
+<style>
+:root{
+  --bg:#0f0a07; --stone:#221912; --stone2:#2e231a;
+  --parch:#e8d6a7; --parch2:#d6bf88; --ink:#2a1a0e; --ink-soft:#5a4129;
+  --gold:#c9a24b; --gold-hi:#f3dc92; --blood:#8a2424; --moss:#4b7048; --ember:#ff8a2b;
+  --noise:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='220' height='220'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='.75' numOctaves='3' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 .35 0 0 0 0 .22 0 0 0 0 .08 0 0 0 .22 0'/></filter><rect width='100%' height='100%' filter='url(%23n)'/></svg>");
+}
+*{box-sizing:border-box}
+html,body{margin:0;min-height:100%;background:var(--bg);color:var(--parch);font-family:'IM Fell English','Cormorant Garamond',Georgia,serif;font-size:18px;-webkit-text-size-adjust:100%}
+body{background:radial-gradient(ellipse at 50% 0%,#2a1d12 0%,#120c08 55%,#070403 100%) fixed}
+body::before{content:"";position:fixed;inset:0;background:var(--noise);opacity:.5;pointer-events:none;z-index:0}
+.hidden{display:none!important}
+h1,h2,h3{font-family:'Cinzel',serif;font-weight:600;margin:0}
+button{font-family:inherit}
+
+/* ============ INTRO ============ */
+#intro{position:fixed;inset:0;z-index:1000;overflow:hidden}
+#intro .void{position:absolute;inset:0;background:radial-gradient(ellipse at 50% 55%,#1c120a,#000 70%);z-index:0}
+#intro .gate{position:absolute;top:0;bottom:0;width:50.3%;z-index:2;transition:transform 2.4s cubic-bezier(.75,0,.2,1) .15s;
+  background:
+    linear-gradient(0deg,transparent 0 14%,#0d0b0a 14% 17%,#2a2623 17% 18%,transparent 18% 82%,#2a2623 82% 83%,#0d0b0a 83% 86%,transparent 86%),
+    radial-gradient(ellipse at 50% 50%,transparent 40%,#000a 100%),
+    repeating-linear-gradient(90deg,#2d1e11 0 46px,#150d07 46px 50px,#3a2713 50px 96px,#120a05 96px 100px);
+  box-shadow:inset 0 0 90px #000}
+#intro .gate.l{left:0;border-right:4px solid #050302}
+#intro .gate.r{right:0;border-left:4px solid #050302}
+#intro .gate::after{content:"";position:absolute;top:50%;width:70px;height:70px;margin-top:-35px;border-radius:50%;
+  border:7px solid #8c7436;background:radial-gradient(circle,#0c0806 40%,#3b2d12 42%);box-shadow:0 0 0 4px #1a1209,0 6px 14px #000}
+#intro .gate.l::after{right:26px}
+#intro .gate.r::after{left:26px}
+#intro .glow{position:absolute;top:0;bottom:0;left:50%;width:0;transform:translateX(-50%);opacity:0;z-index:1;
+  background:linear-gradient(90deg,transparent,#ffbf5a 40%,#fff6dc 50%,#ffbf5a 60%,transparent)}
+#intro.open .glow{animation:glow 2.8s ease-out forwards}
+@keyframes glow{0%{width:0;opacity:0}25%{width:6%;opacity:1}100%{width:130%;opacity:0}}
+#intro.open .gate.l{transform:translateX(-103%)}
+#intro.open .gate.r{transform:translateX(103%)}
+#intro.open .void{opacity:0;transition:opacity 1.4s .3s}
+#intro.open .intro-center,#intro.open .skip{opacity:0;transform:scale(1.15);pointer-events:none;transition:opacity .7s,transform 1.2s}
+#embers{position:absolute;inset:0;z-index:3;pointer-events:none}
+.intro-center{position:absolute;inset:0;z-index:4;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:20px}
+.intro-center::before{content:"";position:absolute;width:min(720px,94vw);height:min(560px,80vh);z-index:-1;
+  background:radial-gradient(ellipse,#000d 25%,#0000 72%)}
+.crest{width:96px;height:106px;margin-bottom:14px;filter:drop-shadow(0 0 14px #c9a24b88)}
+.crest path,.crest circle,.crest line{fill:none;stroke:var(--gold-hi);stroke-width:2.4;stroke-linecap:round;stroke-linejoin:round;stroke-dasharray:420;stroke-dashoffset:420;animation:draw 2.6s .3s ease forwards}
+@keyframes draw{to{stroke-dashoffset:0}}
+.i-kicker{font-family:'Cinzel';letter-spacing:.5em;font-size:12px;color:var(--gold);text-transform:uppercase;opacity:0;animation:fadeUp 1.4s 1.2s forwards}
+.i-title{font-family:'Cinzel Decorative';font-weight:900;font-size:clamp(40px,9vw,96px);color:var(--gold-hi);margin-top:10px;
+  text-shadow:0 0 22px #ff9a3a77,0 3px 0 #000;letter-spacing:.8em;opacity:0;animation:titleIn 2.4s 1.5s cubic-bezier(.2,.7,.2,1) forwards;text-transform:uppercase}
+@keyframes titleIn{0%{opacity:0;letter-spacing:.9em;filter:blur(10px)}100%{opacity:1;letter-spacing:.12em;filter:blur(0)}}
+.i-sub{font-family:'Cinzel';font-size:clamp(14px,3vw,26px);letter-spacing:.45em;text-transform:uppercase;color:var(--parch);margin-top:6px;opacity:0;animation:fadeUp 1.4s 2.6s forwards}
+.i-tag{font-style:italic;color:#bfa77a;margin:18px 0 26px;max-width:480px;opacity:0;animation:fadeUp 1.4s 3.1s forwards}
+@keyframes fadeUp{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:none}}
+.loader{display:flex;flex-direction:column;align-items:center;gap:8px;opacity:0;animation:fadeUp 1s 3.3s forwards}
+.bar{width:min(320px,70vw);height:10px;border:1px solid var(--gold);padding:1px;background:#000a;box-shadow:0 0 10px #c9a24b44}
+.bar i{display:block;height:100%;width:0;background:linear-gradient(90deg,#7a4a12,#ffbf5a);transition:width .3s}
+#loadTxt{font-family:'Cinzel';font-size:12px;letter-spacing:.25em;color:var(--gold);text-transform:uppercase}
+.enter{margin-top:6px;animation:pulse 2s infinite}
+@keyframes pulse{0%,100%{box-shadow:0 0 0 0 #ffbf5a66,0 0 18px #c9a24b66}50%{box-shadow:0 0 0 12px #ffbf5a00,0 0 30px #ffbf5aaa}}
+.skip{position:absolute;right:18px;bottom:16px;z-index:5;background:none;border:0;color:#8a7650;font-family:'Cinzel';letter-spacing:.2em;font-size:12px;cursor:pointer;text-transform:uppercase}
+.skip:hover{color:var(--gold-hi)}
+
+/* ============ APP SHELL ============ */
+#app{position:relative;z-index:1;transform:scale(1.14);filter:blur(6px);transition:transform 2.6s cubic-bezier(.2,.7,.2,1),filter 2.2s;min-height:100vh;padding-bottom:40px}
+body.entered #app{transform:none;filter:none}
+.topbar{position:sticky;top:0;z-index:50;display:flex;align-items:center;gap:22px;padding:10px 26px;
+  background:linear-gradient(#1d140d,#0f0a06);border-bottom:2px solid var(--gold);box-shadow:0 3px 0 #000,0 10px 28px #000c}
+.brand{display:flex;align-items:center;gap:12px}
+.brand svg{width:34px;height:38px;flex:none}
+.brand svg path,.brand svg line,.brand svg circle{fill:none;stroke:var(--gold-hi);stroke-width:3;stroke-linecap:round;stroke-linejoin:round}
+.brand b{display:block;font-family:'Cinzel Decorative';font-size:19px;color:var(--gold-hi);letter-spacing:.1em;line-height:1.05;text-transform:uppercase}
+.brand small{font-family:'Cinzel';font-size:10px;letter-spacing:.38em;color:var(--gold);text-transform:uppercase}
+nav{display:flex;gap:4px;margin-left:auto}
+nav button{background:none;border:1px solid transparent;color:var(--parch);font-family:'Cinzel';font-weight:600;letter-spacing:.14em;text-transform:uppercase;font-size:13px;padding:10px 16px;cursor:pointer;transition:.2s;position:relative}
+nav button:hover{color:var(--gold-hi);border-color:#c9a24b55}
+nav button.active{color:#1a0f06;background:linear-gradient(#e6c76f,#b98d33);border-color:#f3dc92;box-shadow:0 0 14px #c9a24b66}
+.rank{min-width:190px;font-family:'Cinzel';text-align:right}
+.rk-name{font-size:12px;letter-spacing:.18em;color:var(--gold-hi);text-transform:uppercase}
+.xp{height:6px;margin:5px 0 3px;background:#000;border:1px solid #8a6c34}
+.xp i{display:block;height:100%;background:linear-gradient(90deg,#7a1f1f,#e0a339);transition:width .8s}
+.rk-sub{font-size:10px;letter-spacing:.1em;color:#a68f60}
+main{max-width:1240px;margin:0 auto;padding:28px 22px 80px}
+.view-head{text-align:center;margin-bottom:22px}
+.view-head h2{font-family:'Cinzel Decorative';font-size:clamp(22px,4vw,34px);color:var(--gold-hi);letter-spacing:.08em;text-shadow:0 2px 0 #000,0 0 18px #c9a24b44}
+.view-head p{margin:6px auto 0;color:#bfa77a;font-style:italic;max-width:560px}
+.orn{display:flex;align-items:center;gap:12px;justify-content:center;color:var(--gold);margin:10px auto 0;max-width:340px;font-size:12px}
+.orn::before,.orn::after{content:"";flex:1;height:1px;background:linear-gradient(90deg,transparent,var(--gold))}
+.orn::after{transform:scaleX(-1)}
+.parch .orn{color:#8a6c34;max-width:100%}.parch .orn::before,.parch .orn::after{background:linear-gradient(90deg,transparent,#8a6c34)}
+
+/* parchment + buttons */
+.parch{position:relative;background:var(--noise),radial-gradient(ellipse at 30% 15%,#f2e4bb,#dcc590 62%,#c3a468);color:var(--ink);border:1px solid #6d5224;border-radius:3px;
+  box-shadow:0 12px 28px #000a,inset 0 0 46px #8a5a1f66,inset 0 0 0 4px #ecdcae99}
+.btn{display:inline-flex;align-items:center;gap:8px;justify-content:center;cursor:pointer;font-family:'Cinzel';font-weight:700;font-size:12px;letter-spacing:.16em;text-transform:uppercase;
+  color:var(--gold-hi);background:linear-gradient(#34261a,#1a120b);border:1px solid var(--gold);padding:10px 16px;border-radius:2px;transition:.2s;box-shadow:inset 0 0 0 2px #00000055}
+.btn:hover{box-shadow:0 0 14px #c9a24b88,inset 0 0 0 2px #00000055;color:#fff}
+.btn.primary{color:#1a0f06;background:linear-gradient(#f0d589,#c29535);border-color:#f3dc92}
+.btn.primary:hover{background:linear-gradient(#fff0b8,#d8a83c);color:#000}
+.btn.danger{color:#ffd0c8;background:linear-gradient(#6b1c1c,#3d0e0e);border-color:#b44}
+.btn.ghost{background:none;color:var(--ink);border-color:#6d5224}
+.btn.sm{padding:7px 11px;font-size:11px}
+.btn:disabled{opacity:.5;cursor:wait}
+
+/* toolbar */
+.toolbar{display:flex;flex-wrap:wrap;gap:10px;align-items:center;justify-content:center;margin-bottom:24px}
+.chip{background:#1b130c;border:1px solid #5b4524;color:var(--parch);font-family:'Cinzel';font-size:12px;letter-spacing:.14em;text-transform:uppercase;padding:9px 16px;cursor:pointer;transition:.2s}
+.chip:hover{border-color:var(--gold)}
+.chip.on{background:linear-gradient(#e6c76f,#b98d33);color:#1a0f06;border-color:#f3dc92}
+.toolbar select,.toolbar input{background:#1b130c;border:1px solid #5b4524;color:var(--parch);font-family:'IM Fell English',serif;font-size:16px;padding:9px 12px;outline:0}
+.toolbar input:focus,.toolbar select:focus{border-color:var(--gold)}
+
+/* quest cards */
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:24px}
+.quest{padding:20px 20px 16px;display:flex;flex-direction:column;gap:10px;animation:rise .6s both}
+@keyframes rise{from{opacity:0;transform:translateY(18px)}to{opacity:1;transform:none}}
+.quest:hover{transform:translateY(-3px) rotate(-.2deg);transition:.25s}
+.q-top{display:flex;gap:14px;align-items:center}
+.seal{width:46px;height:46px;border-radius:50%;flex:none;display:grid;place-items:center;font-family:'Cinzel Decorative';font-weight:700;font-size:20px;color:var(--gold-hi);
+  background:radial-gradient(circle at 35% 30%,#c0392b,#7a1f1f 60%,#4a1010);box-shadow:0 3px 5px #0008,inset 0 0 0 3px #00000022,inset 0 0 0 5px #ffffff18}
+.quest.done .seal{background:radial-gradient(circle at 35% 30%,#79a574,#3d5f3a 60%,#243a22)}
+.quest h3{font-size:19px;line-height:1.2;color:var(--ink)}
+.q-meta{font-size:15px;color:var(--ink-soft);font-style:italic}
+.q-note{font-size:16px;line-height:1.35;color:#3b2814;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden}
+.q-tags{display:flex;flex-wrap:wrap;gap:8px 14px;font-family:'Cinzel';font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-soft)}
+.prio.p1{color:#6d5a3a}.prio.p2{color:#8a5a14}.prio.p3{color:var(--blood)}
+.q-actions{display:flex;flex-wrap:wrap;gap:8px;margin-top:auto;padding-top:6px}
+.stamp{position:absolute;right:16px;top:62px;transform:rotate(-11deg);border:3px double var(--blood);color:var(--blood);font-family:'Cinzel';font-weight:700;letter-spacing:.18em;padding:1px 10px;font-size:14px;opacity:.72}
+.empty{grid-column:1/-1;text-align:center;padding:46px 20px;color:#bfa77a;font-style:italic;font-size:20px}
+
+/* map */
+.map-wrap{position:relative;border:3px solid var(--gold);box-shadow:0 0 0 6px #1a110a,0 0 0 8px #6d5224,0 18px 40px #000c}
+#map{height:68vh;min-height:420px;background:#2b2116}
+.map-wrap::after{content:"";position:absolute;inset:0;pointer-events:none;z-index:500;box-shadow:inset 0 0 90px #1a0d02cc}
+.leaflet-tile-pane{filter:sepia(.78) saturate(.85) hue-rotate(-14deg) brightness(.88) contrast(1.08)}
+.leaflet-container{font-family:'IM Fell English',serif}
+.leaflet-popup-content-wrapper,.leaflet-popup-tip{background:#ecdcae;color:var(--ink);border:1px solid #6d5224;border-radius:3px}
+.leaflet-popup-content{margin:14px 16px;font-size:16px}
+.leaflet-popup-content h4{margin:0 0 4px;font-family:'Cinzel';font-size:15px}
+.leaflet-control-zoom a{background:#1b130c!important;color:var(--gold-hi)!important;border-color:var(--gold)!important}
+.leaflet-control-attribution{background:#000a!important;color:#9c8858!important}
+.leaflet-control-attribution a{color:#c9a24b!important}
+.pin{position:relative;width:26px;height:26px;border-radius:50% 50% 50% 0;transform:rotate(-45deg);background:var(--blood);border:2px solid var(--gold-hi);box-shadow:0 4px 8px #000a}
+.pin.done{background:var(--moss)}
+.pin span{position:absolute;inset:6px;border-radius:50%;background:var(--gold-hi)}
+.map-banner{position:absolute;top:12px;left:50%;transform:translateX(-50%);z-index:600;background:#1b130cee;border:1px solid var(--gold);color:var(--gold-hi);font-family:'Cinzel';letter-spacing:.12em;font-size:12px;padding:10px 18px;text-transform:uppercase}
+.legend{display:flex;gap:20px;justify-content:center;margin-top:18px;font-family:'Cinzel';font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:#bfa77a}
+.legend i{display:inline-block;width:12px;height:12px;border-radius:50%;border:2px solid var(--gold-hi);vertical-align:-2px;margin-right:6px}
+.map-tools{display:flex;gap:10px;justify-content:center;margin-bottom:18px;flex-wrap:wrap}
+#map.picking{cursor:crosshair}
+
+/* diary book */
+.book{max-width:1120px;margin:0 auto}
+.book-nav{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;font-family:'Cinzel';letter-spacing:.14em;font-size:12px;text-transform:uppercase;color:var(--gold)}
+.book-frame{padding:16px;background:linear-gradient(135deg,#4d1b14,#240b08);border:2px solid #000;border-radius:6px;box-shadow:0 24px 60px #000d,inset 0 0 0 2px #c9a24b66,inset 0 0 40px #000}
+.spread{position:relative;display:grid;grid-template-columns:1fr 1fr;min-height:580px;animation:turn .7s cubic-bezier(.2,.7,.2,1)}
+.spread.back{animation-name:turnBack}
+@keyframes turn{from{opacity:0;transform:perspective(1500px) rotateY(-16deg) translateX(40px)}to{opacity:1;transform:none}}
+@keyframes turnBack{from{opacity:0;transform:perspective(1500px) rotateY(16deg) translateX(-40px)}to{opacity:1;transform:none}}
+.spread::after{content:"";position:absolute;left:50%;top:0;bottom:0;width:26px;transform:translateX(-50%);z-index:3;pointer-events:none;background:linear-gradient(90deg,#0000,#00000070 50%,#0000)}
+.leaf{padding:34px 36px;position:relative;border-radius:0}
+.leaf.l{border-radius:3px 0 0 3px;box-shadow:inset -34px 0 44px -26px #5a3a1088,inset 0 0 46px #8a5a1f66}
+.leaf.r{border-radius:0 3px 3px 0;box-shadow:inset 34px 0 44px -26px #5a3a1088,inset 0 0 46px #8a5a1f66}
+.leaf.l,.leaf.r{background:var(--noise),radial-gradient(ellipse at 30% 15%,#f2e4bb,#dcc590 62%,#c3a468);color:var(--ink)}
+.leather{display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;color:var(--gold-hi);
+  background:var(--noise),radial-gradient(ellipse at center,#74281b,#3a1210 72%,#1f0907)!important;box-shadow:inset 0 0 0 12px #0003,inset 0 0 0 14px #c9a24b88,inset 0 0 70px #000!important}
+.leather h2{font-family:'Cinzel Decorative';font-size:clamp(22px,3.4vw,38px);letter-spacing:.1em;text-shadow:0 2px 0 #000,0 0 14px #ffb04a66;margin:16px 0 6px;text-transform:uppercase}
+.leather p{font-style:italic;color:#e0c68a;margin:0}
+.leather svg{width:90px;height:100px}
+.leather svg *{fill:none;stroke:var(--gold-hi);stroke-width:2.4;stroke-linecap:round;stroke-linejoin:round}
+.toc h3{font-size:22px;text-align:center;letter-spacing:.14em;text-transform:uppercase}
+.toc ol{list-style:none;margin:16px 0 0;padding:0;max-height:430px;overflow:auto}
+.toc li{display:flex;gap:8px;align-items:baseline;padding:8px 4px;border-bottom:1px dotted #8a6c34;cursor:pointer;font-size:17px}
+.toc li:hover{background:#8a5a1f22}
+.toc li b{font-family:'Cinzel';font-size:15px;flex:1}
+.toc li span{font-style:italic;color:var(--ink-soft);font-size:15px;white-space:nowrap}
+.gal{display:grid;grid-template-columns:repeat(2,1fr);gap:16px;align-content:start}
+.gal figure{margin:0;grid-column:span 1;cursor:zoom-in;background:#f6edd3;padding:7px 7px 22px;box-shadow:0 5px 12px #0008;transform:rotate(var(--r,0deg));transition:.25s}
+.gal figure:first-child{grid-column:span 2}
+.gal figure:hover{transform:rotate(0) scale(1.03);z-index:2}
+.gal img{display:block;width:100%;aspect-ratio:1/1;object-fit:cover;background:#b9a273}
+.gal figure:first-child img{aspect-ratio:4/3}
+.no-photo{height:100%;min-height:360px;display:grid;place-items:center;text-align:center;border:2px dashed #8a6c34;color:var(--ink-soft);font-style:italic;padding:20px}
+.e-date{font-family:'Cinzel';letter-spacing:.2em;font-size:12px;text-transform:uppercase;color:var(--blood)}
+.leaf.r h2{font-family:'Cinzel Decorative';font-size:clamp(22px,2.8vw,30px);color:var(--ink);margin:6px 0 4px;line-height:1.15}
+.e-place{font-style:italic;color:var(--ink-soft);font-size:16px}
+.stars{color:#8a5a14;letter-spacing:.2em;font-size:18px}
+.stars .off{color:#8a6c3466}
+.entry-text{margin:14px 0 0;line-height:1.55;font-size:18px;white-space:pre-wrap;max-height:300px;overflow:auto;padding-right:6px}
+.entry-text::first-letter{font-family:'Cinzel Decorative';font-size:3.4em;float:left;line-height:.82;padding:4px 8px 0 0;color:var(--blood)}
+.page-no{position:absolute;bottom:14px;left:0;right:0;text-align:center;font-family:'Cinzel';font-size:12px;letter-spacing:.3em;color:#7a5f30}
+.e-actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:16px;padding-bottom:26px}
+
+/* modals */
+.backdrop{position:fixed;inset:0;background:#000c;z-index:300;display:grid;place-items:start center;padding:24px 14px;overflow:auto;animation:fadeIn .25s}
+@keyframes fadeIn{from{opacity:0}to{opacity:1}}
+.modal{width:min(660px,100%);padding:28px 30px;margin:auto;animation:rise .35s}
+.modal h3{font-family:'Cinzel Decorative';font-size:23px;text-align:center;color:var(--ink)}
+.modal .sub{text-align:center;font-style:italic;color:var(--ink-soft);margin:4px 0 6px}
+.field{display:block;margin-top:16px}
+.field>span,.field>label>span{display:block;font-family:'Cinzel';font-size:11px;letter-spacing:.18em;text-transform:uppercase;color:var(--ink-soft);margin-bottom:5px}
+.modal input,.modal select,.modal textarea{width:100%;font-family:'IM Fell English',serif;font-size:17px;color:var(--ink);background:#fff5;border:1px solid #8a6c34;border-radius:2px;padding:9px 11px;outline:0}
+.modal input:focus,.modal select:focus,.modal textarea:focus{border-color:var(--blood);background:#fff8}
+.modal textarea{resize:vertical;line-height:1.4}
+.row2{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.inline{display:flex;gap:8px}
+.geo-res{margin-top:8px}
+.geo-res button{display:block;width:100%;text-align:left;background:#fff4;border:1px solid #8a6c3488;border-top:0;padding:8px 10px;font-size:15px;color:var(--ink);cursor:pointer}
+.geo-res button:first-child{border-top:1px solid #8a6c3488}
+.geo-res button:hover{background:#fff9}
+.coords{margin-top:8px;font-family:'Cinzel';font-size:11px;letter-spacing:.12em;color:var(--moss);min-height:14px}
+.modal-actions{display:flex;gap:10px;justify-content:flex-end;flex-wrap:wrap;margin-top:24px}
+.modal-actions .left{margin-right:auto}
+.starpick{font-size:30px;color:#8a6c3477;cursor:pointer;letter-spacing:.1em;user-select:none;line-height:1}
+.starpick .on{color:#b07a14}
+.ph-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(92px,1fr));gap:10px;margin-bottom:10px}
+.ph-item{position:relative;aspect-ratio:1;background:#0003;border:3px solid #f6edd3;box-shadow:0 2px 6px #0007}
+.ph-item img{width:100%;height:100%;object-fit:cover;display:block}
+.ph-item button{position:absolute;top:-9px;right:-9px;width:24px;height:24px;border-radius:50%;border:1px solid #000;background:var(--blood);color:#fff;cursor:pointer;line-height:1;font-size:14px}
+.save-stat{margin-top:12px;font-family:'Cinzel';font-size:12px;letter-spacing:.14em;color:var(--blood);min-height:16px;text-align:center}
+
+/* lightbox, toast, fab */
+.lightbox{position:fixed;inset:0;background:#000e;z-index:400;display:grid;place-items:center;padding:20px;animation:fadeIn .2s}
+.lightbox img{max-width:94vw;max-height:88vh;border:8px solid #f6edd3;box-shadow:0 10px 50px #000}
+.lightbox .nav{position:absolute;top:50%;transform:translateY(-50%);background:#1b130ccc;border:1px solid var(--gold);color:var(--gold-hi);font-size:28px;width:48px;height:60px;cursor:pointer}
+.lightbox .nav.p{left:12px}.lightbox .nav.n{right:12px}
+.lightbox .x{position:absolute;top:12px;right:14px}
+#toast{position:fixed;left:50%;bottom:90px;transform:translate(-50%,30px);opacity:0;z-index:500;background:#1b130cf2;border:1px solid var(--gold);color:var(--gold-hi);font-family:'Cinzel';letter-spacing:.1em;font-size:13px;padding:12px 20px;transition:.35s;pointer-events:none;max-width:90vw;text-align:center}
+#toast.show{opacity:1;transform:translate(-50%,0)}
+#toast.err{border-color:#d55;color:#ffd0c8}
+.fab{position:fixed;right:22px;bottom:22px;z-index:60;width:62px;height:62px;border-radius:50%;border:2px solid #f3dc92;background:radial-gradient(circle at 35% 30%,#f0d589,#b98d33);color:#1a0f06;font-size:34px;line-height:1;cursor:pointer;box-shadow:0 6px 18px #000a,0 0 0 4px #0008;transition:.2s}
+.fab:hover{transform:scale(1.08) rotate(90deg)}
+
+@media(max-width:860px){
+  .topbar{flex-wrap:wrap;gap:10px;padding:10px 14px}
+  .rank{min-width:0;margin-left:auto}.rk-sub{display:none}
+  nav{position:fixed;left:0;right:0;bottom:0;margin:0;z-index:70;background:#0f0a06;border-top:2px solid var(--gold);justify-content:space-around;padding:4px}
+  nav button{flex:1;padding:12px 4px;font-size:11px;letter-spacing:.08em}
+  .fab{bottom:76px;right:14px;width:54px;height:54px}
+  #toast{bottom:140px}
+  main{padding:20px 12px 120px}
+  .spread{grid-template-columns:1fr}
+  .spread::after{display:none}
+  .leaf{padding:26px 22px}
+  .leaf.l,.leaf.r{border-radius:3px}
+  .leaf.l+.leaf.r{margin-top:6px}
+  .row2{grid-template-columns:1fr}
+  .modal{padding:22px 18px}
+}
+@media(prefers-reduced-motion:reduce){*{animation-duration:.01s!important;animation-delay:0s!important;transition-duration:.01s!important}}
+</style>
+</head>
+<body>
+
+<!-- ===================== INTRO ===================== -->
+<div id="intro">
+  <div class="void"></div>
+  <div class="glow"></div>
+  <div class="gate l"></div>
+  <div class="gate r"></div>
+  <canvas id="embers"></canvas>
+  <div class="intro-center">
+    <svg class="crest" viewBox="0 0 100 110">
+      <path d="M50 4 L92 18 V52 C92 80 72 96 50 106 C28 96 8 80 8 52 V18 Z"/>
+      <line x1="50" y1="20" x2="50" y2="86"/>
+      <line x1="34" y1="38" x2="66" y2="38"/>
+      <circle cx="50" cy="92" r="0.1"/>
+      <path d="M44 20 L50 12 L56 20"/>
+    </svg>
+    <div class="i-kicker" id="introYear">Anno del Signore</div>
+    <h1 class="i-title">Cronache</h1>
+    <h2 class="i-sub">dell'Avventuriero</h2>
+    <p class="i-tag">Il libro delle imprese ancora da compiere e delle gesta già scritte nella storia.</p>
+    <div class="loader" id="loader">
+      <div class="bar"><i id="barFill"></i></div>
+      <span id="loadTxt">Accendendo le torce…</span>
+    </div>
+    <button class="btn primary enter hidden" id="enterBtn">Varca la soglia</button>
+  </div>
+  <button class="skip" id="skipBtn">Salta ›</button>
+</div>
+
+<!-- ===================== APP ===================== -->
+<div id="app">
+  <header class="topbar">
+    <div class="brand">
+      <svg viewBox="0 0 100 110"><path d="M50 4 L92 18 V52 C92 80 72 96 50 106 C28 96 8 80 8 52 V18 Z"/><line x1="50" y1="20" x2="50" y2="86"/><line x1="34" y1="38" x2="66" y2="38"/></svg>
+      <div><b>Cronache</b><small>dell'Avventuriero</small></div>
+    </div>
+    <nav id="nav">
+      <button data-view="board" class="active">Bacheca</button>
+      <button data-view="map">Mappa del Regno</button>
+      <button data-view="diary">Il Tomo</button>
+    </nav>
+    <div class="rank" id="rank"></div>
+  </header>
+
+  <main>
+    <section id="v-board" class="view">
+      <div class="view-head">
+        <h2>Bacheca delle Missioni</h2>
+        <div class="orn">◆</div>
+        <p>Le imprese che attendono un eroe. Scegli la prossima e parti.</p>
+      </div>
+      <div class="toolbar">
+        <button class="chip on" data-f="todo">Da compiere</button>
+        <button class="chip" data-f="done">Compiute</button>
+        <button class="chip" data-f="all">Tutte</button>
+        <select id="catSel"></select>
+        <input id="searchIn" type="search" placeholder="Cerca nella bacheca…">
+        <button class="btn primary" data-act="new">＋ Nuova missione</button>
+      </div>
+      <div class="grid" id="questGrid"></div>
+    </section>
+
+    <section id="v-map" class="view hidden">
+      <div class="view-head">
+        <h2>Mappa del Regno</h2>
+        <div class="orn">◆</div>
+        <p>Ogni luogo segnato è una meta. Rosso: da raggiungere. Verde: già conquistato.</p>
+      </div>
+      <div class="map-tools">
+        <button class="btn primary" id="pickBtn">⚑ Segna un luogo sulla mappa</button>
+        <button class="btn" id="fitBtn">Mostra tutto il regno</button>
+      </div>
+      <div class="map-wrap">
+        <div id="map"></div>
+        <div class="map-banner hidden" id="pickBanner">Tocca la mappa per segnare il luogo</div>
+      </div>
+      <div class="legend"><span><i style="background:#8a2424"></i>Da compiere</span><span><i style="background:#4b7048"></i>Compiuta</span></div>
+    </section>
+
+    <section id="v-diary" class="view hidden">
+      <div class="view-head">
+        <h2>Il Tomo delle Gesta</h2>
+        <div class="orn">◆</div>
+        <p>Ogni impresa compiuta trova la sua pagina. Sfoglia i ricordi.</p>
+      </div>
+      <div class="book" id="book"></div>
+    </section>
+  </main>
+
+  <button class="fab" data-act="new" title="Nuova missione">+</button>
+</div>
+
+<div id="toast"></div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+<script>
+/* ============================================================
+   DATI — Apps Script (google.script.run) oppure demo locale
+   ============================================================ */
+const IN_GAS = !!(window.google && google.script && google.script.run);
+const LS_KEY = 'cronache_demo_v1';
+
+const demoSeed = () => ([
+  {id:'D1',titolo:'Salire al Monte Pasubio',categoria:'Escursione',stato:'Da compiere',luogo:'Monte Pasubio',lat:45.7936,lng:11.2325,priorita:3,dataPrevista:'',note:'Percorrere la Strada delle 52 Gallerie fino al rifugio e fermarsi a mangiare.',dataCompletata:'',diario:'',foto:[],valutazione:0},
+  {id:'D2',titolo:'Cena in una taverna a Verona',categoria:'Taverna',stato:'Da compiere',luogo:'Verona',lat:45.4384,lng:10.9916,priorita:1,dataPrevista:'',note:'Cercare una vera osteria con tavoli di legno e cucina del posto.',dataCompletata:'',diario:'',foto:[],valutazione:0},
+  {id:'D3',titolo:'Visita alla Rocca di Gradara',categoria:'Cultura',stato:'Compiuta',luogo:'Gradara',lat:43.9358,lng:12.7708,priorita:2,dataPrevista:'',note:'',dataCompletata:'2026-09-20',diario:'Le mura salivano contro il cielo come in un antico racconto. Salimmo fino al camminamento di ronda, mentre il vento portava voci lontane.\n\nAl tramonto la pietra si tinse di rame e per un istante il tempo sembrò fermarsi.',foto:[],valutazione:5}
+]);
+const demoLoad = () => { try { const v = JSON.parse(localStorage.getItem(LS_KEY)); if (v) return v; } catch(e){} return demoSeed(); };
+const demoSave = a => { try { localStorage.setItem(LS_KEY, JSON.stringify(a)); } catch(e){ throw new Error('Memoria demo piena'); } };
+const demo = {
+  apiList: () => demoLoad(),
+  apiSave: q => { const a = demoLoad(); const i = a.findIndex(x => x.id === q.id);
+    const o = Object.assign({}, q, {foto: i >= 0 ? a[i].foto : []}); if (!o.id) o.id = 'Q' + Date.now().toString(36);
+    if (i >= 0) a[i] = o; else a.push(o); demoSave(a); return o; },
+  apiDelete: id => { demoSave(demoLoad().filter(x => x.id !== id)); return true; },
+  apiUploadPhoto: p => { const a = demoLoad(); const q = a.find(x => x.id === p.questId); q.foto.push('data:image/jpeg;base64,' + p.data); demoSave(a); return q; },
+  apiRemovePhoto: (id, fid) => { const a = demoLoad(); const q = a.find(x => x.id === id); q.foto = q.foto.filter(f => f !== fid); demoSave(a); return q; }
+};
+function call(fn, ...args){
+  return new Promise((resolve, reject) => {
+    if (IN_GAS) {
+      google.script.run.withSuccessHandler(resolve).withFailureHandler(e => reject(new Error((e && e.message) || String(e))))[fn](...args);
+    } else {
+      setTimeout(() => { try { resolve(JSON.parse(JSON.stringify(demo[fn](...args)))); } catch(e){ reject(e); } }, 250);
+    }
+  });
+}
+
+/* ============================================================
+   UTILITÀ
+   ============================================================ */
+const $ = (s, r = document) => r.querySelector(s);
+const $$ = (s, r = document) => Array.from(r.querySelectorAll(s));
+const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const CATS = ['Viaggio','Gita','Escursione','Esperienza','Taverna','Cultura','Altro'];
+const PRIO = {1:'Comune', 2:'Nobile', 3:'Leggendaria'};
+const RANKS = [[0,'Recluta'],[1,'Scudiero'],[3,'Viandante'],[6,'Cavaliere Errante'],[10,'Paladino'],[15,'Campione del Regno'],[25,'Leggenda Vivente']];
+const isDone = q => q.stato === 'Compiuta';
+const hasCoords = q => q.lat !== '' && q.lng !== '' && q.lat != null && q.lng != null && !isNaN(q.lat) && !isNaN(q.lng);
+const byId = id => state.quests.find(q => q.id === id);
+const today = () => { const d = new Date(); return d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0'); };
+const fmtDate = d => { if (!d) return ''; const x = new Date(d + 'T12:00:00'); return isNaN(x) ? d : x.toLocaleDateString('it-IT', {day:'numeric', month:'long', year:'numeric'}); };
+const photoUrl = (id, w = 1400) => String(id).startsWith('data:') ? id : 'https://drive.google.com/thumbnail?id=' + encodeURIComponent(id) + '&sz=w' + w;
+const stars = n => '★'.repeat(n) + '<span class="off">' + '★'.repeat(5 - n) + '</span>';
+let toastT;
+function toast(msg, err){ const t = $('#toast'); t.textContent = msg; t.className = 'show' + (err ? ' err' : ''); clearTimeout(toastT); toastT = setTimeout(() => t.className = '', 3200); }
+
+const state = { quests: [], view: 'board', filter: 'todo', cat: '', q: '', page: 0, dir: 'fwd', map: null, layer: null, markers: {}, pick: false };
+
+/* ============================================================
+   INTRO A CANCELLI
+   ============================================================ */
+let stopEmbers = () => {};
+function startEmbers(){
+  const c = $('#embers'), x = c.getContext('2d'); let W, H, run = true;
+  const rs = () => { W = c.width = innerWidth; H = c.height = innerHeight; }; rs(); addEventListener('resize', rs);
+  const mk = init => ({x: Math.random()*W, y: init ? Math.random()*H : H + 10, r: Math.random()*2.2 + .6, vy: Math.random()*.8 + .25, vx: (Math.random()-.5)*.4, a: Math.random()*.7 + .3, ph: Math.random()*6});
+  const ps = Array.from({length: 80}, () => mk(true));
+  (function loop(){ if (!run) return; x.clearRect(0,0,W,H);
+    ps.forEach((p, i) => { p.y -= p.vy; p.ph += .03; p.x += p.vx + Math.sin(p.ph)*.35;
+      const f = p.a * (.6 + .4*Math.sin(p.ph*3)); const g = x.createRadialGradient(p.x,p.y,0,p.x,p.y,p.r*5);
+      g.addColorStop(0, 'rgba(255,190,90,' + f + ')'); g.addColorStop(.4, 'rgba(255,120,30,' + f*.4 + ')'); g.addColorStop(1, 'rgba(255,90,0,0)');
+      x.fillStyle = g; x.beginPath(); x.arc(p.x,p.y,p.r*5,0,6.3); x.fill(); if (p.y < -10) ps[i] = mk(false); });
+    requestAnimationFrame(loop); })();
+  return () => { run = false; };
+}
+function gateSound(){
+  try {
+    const AC = window.AudioContext || window.webkitAudioContext; const ac = new AC(); const t = ac.currentTime;
+    const len = Math.floor(ac.sampleRate * 2.8), buf = ac.createBuffer(1, len, ac.sampleRate), d = buf.getChannelData(0);
+    for (let i = 0; i < len; i++) d[i] = (Math.random()*2-1) * Math.pow(1 - i/len, 1.2);
+    const n = ac.createBufferSource(); n.buffer = buf;
+    const f = ac.createBiquadFilter(); f.type = 'lowpass'; f.frequency.setValueAtTime(240, t); f.frequency.linearRampToValueAtTime(80, t + 2.6);
+    const g = ac.createGain(); g.gain.setValueAtTime(0, t); g.gain.linearRampToValueAtTime(.7, t + .2); g.gain.exponentialRampToValueAtTime(.001, t + 2.8);
+    n.connect(f); f.connect(g); g.connect(ac.destination); n.start(t);
+    const o = ac.createOscillator(); o.type = 'sine'; o.frequency.setValueAtTime(95, t); o.frequency.exponentialRampToValueAtTime(34, t + .6);
+    const og = ac.createGain(); og.gain.setValueAtTime(.9, t); og.gain.exponentialRampToValueAtTime(.001, t + .7);
+    o.connect(og); og.connect(ac.destination); o.start(t); o.stop(t + .8);
+  } catch(e){}
+}
+function runIntro(dataPromise){
+  $('#introYear').textContent = 'Anno del Signore ' + new Date().getFullYear();
+  stopEmbers = startEmbers();
+  const fill = $('#barFill'), txt = $('#loadTxt'), enter = $('#enterBtn');
+  const lines = ['Accendendo le torce…','Srotolando le pergamene…','Consultando le mappe del regno…','Svegliando i draghi…','Affilando le spade…'];
+  let ready = false, minTime = false, skipping = false, opened = false, li = 0;
+  const t0 = Date.now(); const msgT = setInterval(() => { txt.textContent = lines[++li % lines.length]; }, 1100);
+  const prog = setInterval(() => { const p = Math.min(90, (Date.now() - t0) / 4200 * 90); if (!ready) fill.style.width = p + '%'; }, 120);
+  setTimeout(() => { minTime = true; check(); }, 4300);
+  dataPromise.then(() => { ready = true; check(); });
+  function check(){
+    if (!ready || (!minTime && !skipping)) return;
+    clearInterval(prog); clearInterval(msgT); fill.style.width = '100%'; txt.textContent = 'Il regno ti attende';
+    if (skipping) return open();
+    setTimeout(() => { $('#loader').classList.add('hidden'); enter.classList.remove('hidden'); enter.focus(); }, 500);
+  }
+  function open(){
+    if (opened) return; opened = true; gateSound();
+    $('#intro').classList.add('open'); document.body.classList.add('entered');
+    setTimeout(() => { $('#intro').remove(); stopEmbers(); }, 3400);
+  }
+  enter.onclick = open;
+  $('#skipBtn').onclick = () => { skipping = true; ready ? open() : (txt.textContent = 'Un istante…'); };
+  document.addEventListener('keydown', e => { if (e.key === 'Enter' && !enter.classList.contains('hidden')) open(); });
+}
+
+/* ============================================================
+   RENDER
+   ============================================================ */
+function renderRank(){
+  const done = state.quests.filter(isDone), n = done.length;
+  const xp = done.reduce((s, q) => s + 100 + ((q.priorita || 2) - 1) * 50, 0);
+  let i = 0; RANKS.forEach((r, k) => { if (n >= r[0]) i = k; });
+  const next = RANKS[i + 1], pct = next ? (n - RANKS[i][0]) / (next[0] - RANKS[i][0]) * 100 : 100;
+  $('#rank').innerHTML = '<div class="rk-name">' + RANKS[i][1] + '</div><div class="xp"><i style="width:' + pct + '%"></i></div><div class="rk-sub">Gloria ' + xp + (next ? ' · ' + next[1] + ' a ' + next[0] + ' imprese' : ' · vetta raggiunta') + '</div>';
+}
+
+function filteredQuests(){
+  const s = state.q.trim().toLowerCase();
+  return state.quests.filter(q => {
+    if (state.filter === 'todo' && isDone(q)) return false;
+    if (state.filter === 'done' && !isDone(q)) return false;
+    if (state.cat && q.categoria !== state.cat) return false;
+    if (s && !(q.titolo + ' ' + q.luogo + ' ' + q.note).toLowerCase().includes(s)) return false;
+    return true;
+  }).sort((a, b) => isDone(a) && isDone(b) ? (b.dataCompletata || '').localeCompare(a.dataCompletata || '') : (b.priorita - a.priorita) || a.titolo.localeCompare(b.titolo));
+}
+
+function renderBoard(){
+  const list = filteredQuests();
+  $('#questGrid').innerHTML = list.length ? list.map((q, i) => {
+    const done = isDone(q);
+    return '<article class="quest parch ' + (done ? 'done' : '') + '" style="animation-delay:' + Math.min(i, 12) * 60 + 'ms">' +
+      '<div class="q-top"><div class="seal">' + esc((q.categoria || 'A')[0]) + '</div><h3>' + esc(q.titolo) + '</h3></div>' +
+      (done ? '<div class="stamp">Compiuta</div>' : '') +
+      '<div class="q-meta">' + esc(q.categoria) + (q.luogo ? ' · ' + esc(q.luogo) : '') + '</div>' +
+      (q.note ? '<div class="q-note">' + esc(q.note) + '</div>' : '') +
+      '<div class="q-tags"><span class="prio p' + q.priorita + '">' + '◆'.repeat(q.priorita) + ' ' + PRIO[q.priorita] + '</span>' +
+        (done && q.dataCompletata ? '<span>' + fmtDate(q.dataCompletata) + '</span>' : (q.dataPrevista ? '<span>Entro ' + fmtDate(q.dataPrevista) + '</span>' : '')) +
+        (hasCoords(q) ? '<span>⚑ sulla mappa</span>' : '') + '</div>' +
+      '<div class="q-actions">' +
+        (done ? '<button class="btn sm primary" data-act="diary" data-id="' + q.id + '">Leggi la pagina</button>'
+              : '<button class="btn sm primary" data-act="complete" data-id="' + q.id + '">Compiuta!</button>') +
+        (hasCoords(q) ? '<button class="btn sm ghost" data-act="locate" data-id="' + q.id + '">Mappa</button>' : '') +
+        '<button class="btn sm ghost" data-act="edit" data-id="' + q.id + '">Modifica</button>' +
+      '</div></article>';
+  }).join('') : '<div class="empty">' + (state.quests.length ? 'Nessuna missione corrisponde alla ricerca.' : 'La bacheca è vuota. Scrivi la tua prima missione!') + '</div>';
+}
+
+/* ---------- mappa ---------- */
+function pinIcon(done){ return L.divIcon({className: '', html: '<div class="pin ' + (done ? 'done' : '') + '"><span></span></div>', iconSize: [26, 26], iconAnchor: [13, 31], popupAnchor: [0, -30]}); }
+function initMap(){
+  if (state.map) return;
+  state.map = L.map('map', {worldCopyJump: true}).setView([42.5, 12.5], 5);
+  L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {maxZoom: 18, attribution: '© OpenStreetMap'}).addTo(state.map);
+  state.layer = L.layerGroup().addTo(state.map);
+  state.map.on('click', async e => {
+    if (!state.pick) return; setPick(false);
+    toast('Interrogando le mappe…'); let name = '';
+    try {
+      const r = await fetch('https://nominatim.openstreetmap.org/reverse?format=jsonv2&zoom=14&accept-language=it&lat=' + e.latlng.lat + '&lon=' + e.latlng.lng).then(r => r.json());
+      const a = r.address || {}; name = r.name || a.city || a.town || a.village || a.hamlet || a.county || (r.display_name || '').split(',')[0] || '';
+    } catch(err){}
+    openQuestEditor(null, {luogo: name, lat: +e.latlng.lat.toFixed(6), lng: +e.latlng.lng.toFixed(6)});
+  });
+  state.map.on('popupopen', e => { const el = e.popup.getElement(); el.onclick = ev => { const b = ev.target.closest('[data-act]'); if (b) handleAct(b); }; });
+}
+function setPick(on){ state.pick = on; $('#map').classList.toggle('picking', on); $('#pickBanner').classList.toggle('hidden', !on); $('#pickBtn').textContent = on ? '✕ Annulla' : '⚑ Segna un luogo sulla mappa'; }
+function renderMap(fit){
+  initMap(); setTimeout(() => state.map.invalidateSize(), 80);
+  state.layer.clearLayers(); state.markers = {}; const pts = [];
+  state.quests.filter(hasCoords).forEach(q => {
+    const m = L.marker([q.lat, q.lng], {icon: pinIcon(isDone(q)), title: q.titolo}).addTo(state.layer);
+    m.bindPopup('<h4>' + esc(q.titolo) + '</h4><div style="font-style:italic;color:#5a4129">' + esc(q.categoria) + (q.luogo ? ' · ' + esc(q.luogo) : '') + '</div>' +
+      '<div style="margin-top:10px;display:flex;gap:6px;flex-wrap:wrap">' +
+      (isDone(q) ? '<button class="btn sm primary" data-act="diary" data-id="' + q.id + '">Pagina</button>' : '<button class="btn sm primary" data-act="complete" data-id="' + q.id + '">Compiuta!</button>') +
+      '<button class="btn sm ghost" data-act="edit" data-id="' + q.id + '">Modifica</button></div>');
+    state.markers[q.id] = m; pts.push([q.lat, q.lng]);
+  });
+  if (fit && pts.length) state.map.fitBounds(pts, {padding: [60, 60], maxZoom: 12});
+}
+
+/* ---------- diario ---------- */
+const diaryPages = () => state.quests.filter(isDone).sort((a, b) => (a.dataCompletata || '').localeCompare(b.dataCompletata || ''));
+function renderDiary(){
+  const pages = diaryPages(), n = pages.length;
+  state.page = Math.max(0, Math.min(state.page, n));
+  const crest = '<svg viewBox="0 0 100 110"><path d="M50 4 L92 18 V52 C92 80 72 96 50 106 C28 96 8 80 8 52 V18 Z"/><line x1="50" y1="20" x2="50" y2="86"/><line x1="34" y1="38" x2="66" y2="38"/></svg>';
+  let spread;
+  if (state.page === 0) {
+    spread = '<div class="leaf l leather">' + crest + '<h2>Il Libro<br>delle Imprese</h2><p>' + (n ? n + (n === 1 ? ' pagina scritta' : ' pagine scritte') : 'Nessuna pagina ancora') + '</p></div>' +
+      '<div class="leaf r toc"><h3>Indice</h3><div class="orn">◆</div>' +
+      (n ? '<ol>' + pages.map((q, i) => '<li data-go="' + (i + 1) + '"><b>' + esc(q.titolo) + '</b><span>' + fmtDate(q.dataCompletata) + '</span></li>').join('') + '</ol>'
+         : '<p style="text-align:center;font-style:italic;margin-top:50px;line-height:1.5">Il tomo è ancora vuoto.<br>Compi una missione dalla Bacheca e la sua pagina apparirà qui.</p>') +
+      '</div>';
+  } else {
+    const q = pages[state.page - 1], rots = ['-1.6deg', '1.3deg', '-.8deg', '1.8deg', '-1.2deg'];
+    const gal = q.foto.length ? '<div class="gal">' + q.foto.map((f, i) => '<figure style="--r:' + rots[i % 5] + '" data-lb="' + i + '"><img loading="lazy" alt="" src="' + photoUrl(f, i ? 600 : 1000) + '"></figure>').join('') + '</div>'
+      : '<div class="no-photo">Nessuna immagine impressa in questa pagina.<br>Aggiungine dalla modifica.</div>';
+    spread = '<div class="leaf l">' + gal + '<div class="page-no">— ' + (state.page * 2 - 1) + ' —</div></div>' +
+      '<div class="leaf r"><div class="e-date">' + fmtDate(q.dataCompletata) + '</div><h2>' + esc(q.titolo) + '</h2>' +
+      '<div class="e-place">' + esc(q.categoria) + (q.luogo ? ' · ' + esc(q.luogo) : '') + '</div>' +
+      (q.valutazione ? '<div class="stars">' + stars(q.valutazione) + '</div>' : '') + '<div class="orn">◆</div>' +
+      '<div class="entry-text">' + (q.diario ? esc(q.diario) : '<i>Nessuna cronaca scritta per questa impresa.</i>') + '</div>' +
+      '<div class="e-actions"><button class="btn sm ghost" data-act="complete" data-id="' + q.id + '">Modifica pagina</button>' +
+      (hasCoords(q) ? '<button class="btn sm ghost" data-act="locate" data-id="' + q.id + '">Sulla mappa</button>' : '') + '</div>' +
+      '<div class="page-no">— ' + (state.page * 2) + ' —</div></div>';
+  }
+  $('#book').innerHTML = '<div class="book-nav"><button class="btn sm" id="prevP"' + (state.page === 0 ? ' disabled' : '') + '>‹ Indietro</button>' +
+    '<span>' + (state.page === 0 ? 'Copertina e indice' : 'Impresa ' + state.page + ' di ' + n) + '</span>' +
+    '<button class="btn sm" id="nextP"' + (state.page >= n ? ' disabled' : '') + '>Avanti ›</button></div>' +
+    '<div class="book-frame"><div class="spread ' + (state.dir === 'back' ? 'back' : '') + '">' + spread + '</div></div>';
+  $('#prevP').onclick = () => turn(-1); $('#nextP').onclick = () => turn(1);
+  $$('#book [data-go]').forEach(li => li.onclick = () => { state.dir = 'fwd'; state.page = +li.dataset.go; renderDiary(); });
+  if (state.page > 0) $$('#book [data-lb]').forEach(f => f.onclick = () => openLightbox(diaryPages()[state.page - 1].foto.map(x => photoUrl(x, 2000)), +f.dataset.lb));
+}
+function turn(d){ state.dir = d < 0 ? 'back' : 'fwd'; state.page += d; renderDiary(); }
+
+function renderAll(){ renderRank(); renderBoard(); if (state.view === 'map') renderMap(false); if (state.view === 'diary') renderDiary(); }
+function showView(v){
+  state.view = v; if (v !== 'map') setPick(false);
+  $$('.view').forEach(s => s.classList.toggle('hidden', s.id !== 'v-' + v));
+  $$('#nav button').forEach(b => b.classList.toggle('active', b.dataset.view === v));
+  if (v === 'board') renderBoard(); if (v === 'map') renderMap(true); if (v === 'diary') { state.dir = 'fwd'; renderDiary(); }
+  scrollTo({top: 0, behavior: 'smooth'});
+}
+
+/* ============================================================
+   MODALI
+   ============================================================ */
+function openModal(html){
+  closeModal(); const b = document.createElement('div'); b.className = 'backdrop'; b.id = 'modalBack';
+  b.innerHTML = '<div class="modal parch">' + html + '</div>';
+  b.addEventListener('mousedown', e => { if (e.target === b && !b.dataset.lock) closeModal(); });
+  document.body.appendChild(b); return b;
+}
+function closeModal(){ const b = $('#modalBack'); if (b) b.remove(); }
+const catOptions = sel => CATS.map(c => '<option' + (c === sel ? ' selected' : '') + '>' + c + '</option>').join('');
+
+function openQuestEditor(q, pre){
+  const isNew = !q;
+  const d = q || Object.assign({id: '', titolo: '', categoria: 'Viaggio', stato: 'Da compiere', luogo: '', lat: '', lng: '', priorita: 2, dataPrevista: '', note: ''}, pre || {});
+  const b = openModal(
+    '<h3>' + (isNew ? 'Nuova Missione' : 'Modifica Missione') + '</h3><div class="orn">◆</div>' +
+    '<form id="qForm" autocomplete="off">' +
+    '<label class="field"><span>Titolo dell\'impresa</span><input name="titolo" required maxlength="140" placeholder="Es. Salire al Monte Pasubio" value="' + esc(d.titolo) + '"></label>' +
+    '<div class="row2"><label class="field"><span>Genere</span><select name="categoria">' + catOptions(d.categoria) + '</select></label>' +
+    '<label class="field"><span>Rango</span><select name="priorita">' + [1,2,3].map(p => '<option value="' + p + '"' + (d.priorita == p ? ' selected' : '') + '>' + '◆'.repeat(p) + ' ' + PRIO[p] + '</option>').join('') + '</select></label></div>' +
+    '<div class="field"><span>Luogo</span><div class="inline"><input name="luogo" maxlength="200" placeholder="Città, rifugio, castello…" value="' + esc(d.luogo) + '"><button type="button" class="btn" id="geoBtn">Cerca</button></div>' +
+    '<div class="geo-res" id="geoRes"></div><div class="coords" id="coordInfo"></div></div>' +
+    '<input type="hidden" name="lat" value="' + esc(d.lat) + '"><input type="hidden" name="lng" value="' + esc(d.lng) + '">' +
+    '<label class="field"><span>Data presunta (facoltativa)</span><input type="date" name="dataPrevista" value="' + esc(d.dataPrevista) + '"></label>' +
+    '<label class="field"><span>Appunti</span><textarea name="note" rows="3" maxlength="2000" placeholder="Idee, compagni di viaggio, cose da portare…">' + esc(d.note) + '</textarea></label>' +
+    '<div class="modal-actions">' + (isNew ? '' : '<button type="button" class="btn danger left" id="delBtn">Elimina</button>') +
+    '<button type="button" class="btn ghost" id="cancelBtn">Annulla</button><button class="btn primary" type="submit">Scrivi sulla bacheca</button></div></form>');
+  const f = $('#qForm', b);
+  const showCoords = () => { const la = f.lat.value, lo = f.lng.value; $('#coordInfo', b).innerHTML = (la !== '' && lo !== '') ? '⚑ Posizione fissata: ' + (+la).toFixed(4) + ', ' + (+lo).toFixed(4) + ' · <a href="#" id="clrPos" style="color:var(--blood)">rimuovi</a>' : ''; const c = $('#clrPos', b); if (c) c.onclick = e => { e.preventDefault(); f.lat.value = ''; f.lng.value = ''; showCoords(); }; };
+  showCoords();
+  const geo = async () => {
+    const term = f.luogo.value.trim(); if (!term) return; const res = $('#geoRes', b); res.innerHTML = '<div class="coords">Consultando le mappe…</div>';
+    try {
+      const r = await fetch('https://nominatim.openstreetmap.org/search?format=jsonv2&limit=5&accept-language=it&q=' + encodeURIComponent(term)).then(r => r.json());
+      res.innerHTML = r.length ? r.map((x, i) => '<button type="button" data-i="' + i + '">' + esc(x.display_name) + '</button>').join('') : '<div class="coords" style="color:var(--blood)">Nessun luogo trovato. Prova un nome diverso.</div>';
+      $$('button', res).forEach(btn => btn.onclick = () => { const x = r[+btn.dataset.i]; f.lat.value = (+x.lat).toFixed(6); f.lng.value = (+x.lon).toFixed(6); if (!f.luogo.value.trim() || true) f.luogo.value = x.display_name.split(',').slice(0, 2).join(',').trim(); res.innerHTML = ''; showCoords(); });
+    } catch(e){ res.innerHTML = '<div class="coords" style="color:var(--blood)">Ricerca non disponibile ora.</div>'; }
+  };
+  $('#geoBtn', b).onclick = geo;
+  f.luogo.addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); geo(); } });
+  $('#cancelBtn', b).onclick = closeModal;
+  const del = $('#delBtn', b);
+  if (del) del.onclick = async () => { if (!confirm('Eliminare questa missione' + (isDone(d) ? ' e la sua pagina del diario' : '') + '? Non si può annullare.')) return;
+    del.disabled = true; try { await call('apiDelete', d.id); state.quests = state.quests.filter(x => x.id !== d.id); closeModal(); renderAll(); toast('Missione cancellata dagli annali'); } catch(e){ toast(e.message, true); del.disabled = false; } };
+  f.onsubmit = async e => {
+    e.preventDefault(); const btn = f.querySelector('[type=submit]'); btn.disabled = true;
+    const obj = Object.assign({}, d, {titolo: f.titolo.value.trim(), categoria: f.categoria.value, priorita: +f.priorita.value, luogo: f.luogo.value.trim(), lat: f.lat.value, lng: f.lng.value, dataPrevista: f.dataPrevista.value, note: f.note.value.trim()});
+    try { const saved = await call('apiSave', obj); upsert(saved); closeModal(); renderAll(); toast(isNew ? 'Missione aggiunta alla bacheca' : 'Missione aggiornata'); }
+    catch(err){ toast(err.message, true); btn.disabled = false; }
+  };
+  f.titolo.focus();
+}
+function upsert(q){ const i = state.quests.findIndex(x => x.id === q.id); if (i >= 0) state.quests[i] = q; else state.quests.push(q); }
+
+function fileToBase64(file, max = 1600, quality = .82){
+  return new Promise((resolve, reject) => {
+    const url = URL.createObjectURL(file), img = new Image();
+    img.onload = () => { const s = Math.min(1, max / Math.max(img.width, img.height)); const c = document.createElement('canvas'); c.width = Math.round(img.width * s); c.height = Math.round(img.height * s);
+      c.getContext('2d').drawImage(img, 0, 0, c.width, c.height); URL.revokeObjectURL(url); resolve(c.toDataURL('image/jpeg', quality)); };
+    img.onerror = () => { URL.revokeObjectURL(url); reject(new Error('Immagine non leggibile')); }; img.src = url;
+  });
+}
+
+function openDiaryEditor(id){
+  const q = byId(id); if (!q) return;
+  let rating = q.valutazione || 0; const pending = [], removed = [];
+  const b = openModal(
+    '<h3>Scrivi la pagina del diario</h3><div class="sub">' + esc(q.titolo) + '</div><div class="orn">◆</div>' +
+    '<form id="dForm"><div class="row2"><label class="field"><span>Data dell\'impresa</span><input type="date" name="data" value="' + esc(q.dataCompletata || today()) + '" required></label>' +
+    '<div class="field"><span>Valutazione</span><div class="starpick" id="starpick"></div></div></div>' +
+    '<label class="field"><span>Cronaca</span><textarea name="diario" rows="8" maxlength="45000" placeholder="Racconta com\'è andata, chi c\'era, cosa hai provato…">' + esc(q.diario || '') + '</textarea></label>' +
+    '<div class="field"><span>Immagini</span><div class="ph-grid" id="phGrid"></div><label class="btn sm" for="fileIn">＋ Aggiungi immagini</label><input type="file" id="fileIn" accept="image/*" multiple hidden></div>' +
+    '<div class="save-stat" id="saveStat"></div>' +
+    '<div class="modal-actions"><button type="button" class="btn ghost" id="cancelBtn">Annulla</button><button class="btn primary" type="submit">Sigilla la pagina</button></div></form>');
+  $('#modalBack').dataset.lock = '1';
+  const f = $('#dForm', b), sp = $('#starpick', b), grid = $('#phGrid', b);
+  const drawStars = () => { sp.innerHTML = [1,2,3,4,5].map(i => '<span data-v="' + i + '" class="' + (i <= rating ? 'on' : '') + '">★</span>').join(''); };
+  drawStars(); sp.onclick = e => { const v = e.target.dataset.v; if (v) { rating = (+v === rating) ? 0 : +v; drawStars(); } };
+  const drawPh = () => {
+    const ex = q.foto.filter(x => !removed.includes(x)).map(x => '<div class="ph-item"><img alt="" src="' + photoUrl(x, 300) + '"><button type="button" data-rm="' + esc(x) + '">×</button></div>');
+    const nw = pending.map((p, i) => '<div class="ph-item"><img alt="" src="' + p.url + '"><button type="button" data-pd="' + i + '">×</button></div>');
+    grid.innerHTML = ex.concat(nw).join('');
+    $$('[data-rm]', grid).forEach(x => x.onclick = () => { removed.push(x.dataset.rm); drawPh(); });
+    $$('[data-pd]', grid).forEach(x => x.onclick = () => { pending.splice(+x.dataset.pd, 1); drawPh(); });
+  };
+  drawPh();
+  $('#fileIn', b).onchange = async e => {
+    for (const file of Array.from(e.target.files)) { try { const url = await fileToBase64(file); pending.push({url}); drawPh(); } catch(err){ toast(err.message, true); } }
+    e.target.value = '';
+  };
+  $('#cancelBtn', b).onclick = closeModal;
+  f.onsubmit = async e => {
+    e.preventDefault(); const btn = f.querySelector('[type=submit]'), stat = $('#saveStat', b); btn.disabled = true;
+    try {
+      stat.textContent = 'Incidendo il testo…';
+      let saved = await call('apiSave', Object.assign({}, q, {stato: 'Compiuta', dataCompletata: f.data.value, diario: f.diario.value.trim(), valutazione: rating}));
+      for (const fid of removed) { saved = await call('apiRemovePhoto', q.id, fid); }
+      for (let i = 0; i < pending.length; i++) {
+        stat.textContent = 'Dipingendo le immagini ' + (i + 1) + ' di ' + pending.length + '…';
+        saved = await call('apiUploadPhoto', {questId: q.id, name: 'foto.jpg', mime: 'image/jpeg', data: pending[i].url.split(',')[1]});
+      }
+      upsert(saved); closeModal(); renderAll();
+      const idx = diaryPages().findIndex(x => x.id === q.id) + 1; toast('Pagina sigillata nel tomo');
+      if (state.view !== 'diary') { state.page = idx; } 
+      if (state.view === 'board' && !q.diario && q.stato !== 'Compiuta') { /* resta in bacheca */ }
+    } catch(err){ stat.textContent = ''; toast(err.message, true); btn.disabled = false; }
+  };
+  f.diario.focus();
+}
+
+function openLightbox(urls, i){
+  let cur = i; const el = document.createElement('div'); el.className = 'lightbox';
+  const draw = () => { el.innerHTML = '<img alt="" src="' + urls[cur] + '">' + (urls.length > 1 ? '<button class="nav p">‹</button><button class="nav n">›</button>' : '') + '<button class="btn x">Chiudi ✕</button>';
+    const p = $('.p', el), n = $('.n', el); if (p) p.onclick = e => { e.stopPropagation(); cur = (cur - 1 + urls.length) % urls.length; draw(); }; if (n) n.onclick = e => { e.stopPropagation(); cur = (cur + 1) % urls.length; draw(); };
+    $('.x', el).onclick = close; };
+  const close = () => { el.remove(); document.removeEventListener('keydown', key); };
+  const key = e => { if (e.key === 'Escape') close(); if (e.key === 'ArrowLeft' && $('.p', el)) $('.p', el).click(); if (e.key === 'ArrowRight' && $('.n', el)) $('.n', el).click(); };
+  el.onclick = e => { if (e.target === el) close(); }; document.addEventListener('keydown', key); draw(); document.body.appendChild(el);
+}
+
+/* ============================================================
+   EVENTI
+   ============================================================ */
+function handleAct(b){
+  const id = b.dataset.id, a = b.dataset.act;
+  if (a === 'new') return openQuestEditor(null);
+  if (a === 'edit') { if ($('.leaflet-popup') && state.map) state.map.closePopup(); return openQuestEditor(byId(id)); }
+  if (a === 'complete') { if (state.map) state.map.closePopup(); return openDiaryEditor(id); }
+  if (a === 'diary') { if (state.map) state.map.closePopup(); state.dir = 'fwd'; state.page = diaryPages().findIndex(q => q.id === id) + 1; return showView('diary'); }
+  if (a === 'locate') { const q = byId(id); showView('map'); setTimeout(() => { state.map.setView([q.lat, q.lng], 13); const m = state.markers[id]; if (m) m.openPopup(); }, 250); }
+}
+document.addEventListener('click', e => { const b = e.target.closest('[data-act]'); if (b && !b.closest('.leaflet-popup')) handleAct(b); });
+$('#nav').onclick = e => { const b = e.target.closest('button'); if (b) showView(b.dataset.view); };
+$$('.chip').forEach(c => c.onclick = () => { state.filter = c.dataset.f; $$('.chip').forEach(x => x.classList.toggle('on', x === c)); renderBoard(); });
+$('#catSel').innerHTML = '<option value="">Tutti i generi</option>' + CATS.map(c => '<option>' + c + '</option>').join('');
+$('#catSel').onchange = e => { state.cat = e.target.value; renderBoard(); };
+$('#searchIn').oninput = e => { state.q = e.target.value; renderBoard(); };
+$('#pickBtn').onclick = () => setPick(!state.pick);
+$('#fitBtn').onclick = () => renderMap(true);
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape') closeModal();
+  if (state.view === 'diary' && !$('#modalBack') && !$('.lightbox') && !/INPUT|TEXTAREA|SELECT/.test((document.activeElement || {}).tagName || '')) {
+    if (e.key === 'ArrowRight' && state.page < diaryPages().length) turn(1);
+    if (e.key === 'ArrowLeft' && state.page > 0) turn(-1);
+  }
+});
+
+/* ============================================================
+   AVVIO
+   ============================================================ */
+const loading = call('apiList').then(list => { state.quests = list || []; renderAll(); })
+  .catch(err => { renderAll(); setTimeout(() => toast('Errore nel caricare i dati: ' + err.message, true), 4000); });
+runIntro(loading);
+if (!IN_GAS) console.info('Modalità demo: i dati sono salvati solo nel browser (localStorage).');
+</script>
+</body>
+</html>
